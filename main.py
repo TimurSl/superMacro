@@ -8,12 +8,11 @@ This program comes with ABSOLUTELY NO WARRANTY.
 This is free software, and you are welcome to redistribute it under certain conditions.
 """
 import argparse
-import distutils
-import os
-import subprocess
+import sys
 import time
 
 import keyboard
+import mouse as m
 from art import tprint, text2art
 from past.builtins import raw_input
 
@@ -31,6 +30,15 @@ debug = False
 
 script_run_times = 0
 
+current_version = "1.2.0"
+
+mouse_buttons = [
+    ["ЛКМ", "lmb", m.LEFT],
+    ["ПКМ", "rmb", m.RIGHT],
+    ["СКМ", "mmb", m.MIDDLE],
+    ["Кнопка 4", "x1", m.X],
+    ["Кнопка 5", "x2", m.X2]
+]
 
 def main():
     global file, macro_dict, debug
@@ -44,7 +52,7 @@ def main():
     if args.script:
         file = args.script
     else:
-        file = input("Введите путь к макросу: ")
+        file = raw_input("Введите путь к макросу: ")
 
     if args.debug:
         debug = True
@@ -56,7 +64,10 @@ def main():
     print("Макрос загружен: " + file)
 
     hotkey = get_hotkey()
-    keyboard.add_hotkey(hotkey, run_macro)
+    if hotkey in mouse_buttons:
+        pass
+    else:
+        keyboard.add_hotkey(hotkey, run_macro)
     print("Нажмите " + color.Fore.RED + hotkey + color.Fore.RESET + " для запуска макроса")
 
 
@@ -69,55 +80,42 @@ def run_macro():
         for i in macro_dict:
             command = i[0]
             first_arg = i[1]
-
+            if debug:
+                print(f"Команда: {command}, Аргумент: {first_arg}")
+            # click - нажать кнопку
             if command == "click":
-                if first_arg == "lmb":
-                    commands.mouse_click("left")
+                # Проверка, являеться ли клавиша кнопкой мыши
+                if is_mouse_button(first_arg):
+                    # Нажатие клавиши
+                    commands.mouse_click(get_button_by_code(first_arg)[2])
+                    # Если включен режим отладки
                     if debug:
-                        print("Клик левой кнопкой мыши")
-                elif first_arg == "rmb":
-                    commands.mouse_click("right")
+                        # Вывести сообщение
+                        print("Клик кнопки " + get_button_by_code(first_arg)[0])
+                # Если не являеться
+                else:
+                    # Нажатие клавиши
+                    commands.click(first_arg)
+                    # Если включен режим отладки
                     if debug:
-                        print("Клик правой кнопкой мыши")
-                elif first_arg == "mmb":
-                    commands.mouse_click("middle")
-                    print("Клик средней кнопкой мыши")
+                        # Вывести сообщение
+                        print("Клик клавиши " + first_arg)
+            elif command == "press":
+                if is_mouse_button(first_arg):
+                    commands.mouse_press(get_button_by_code(first_arg)[2])
+                    if debug:
+                        print("Нажатие кнопки " + get_button_by_code(first_arg)[0])
                 else:
                     commands.click(first_arg)
                     if debug:
-                        print("Клик клавиши " + first_arg)
-            elif command == "press":
-                if first_arg == "lmb":
-                    commands.mouse_press("left")
-                    if debug:
-                        print("Нажатие левой кнопкой мыши")
-                elif first_arg == "rmb":
-                    commands.mouse_press("right")
-                    if debug:
-                        print("Нажатие правой кнопкой мыши")
-                elif first_arg == "mmb":
-                    commands.mouse_press("middle")
-                    if debug:
-                        print("Нажатие средней кнопкой мыши")
-                else:
-                    commands.press(first_arg)
-                    if debug:
                         print("Нажатие клавиши " + first_arg)
             elif command == "release":
-                if first_arg == "lmb":
-                    commands.mouse_release("left")
+                if is_mouse_button(first_arg):
+                    commands.mouse_click(get_button_by_code(first_arg)[2])
                     if debug:
-                        print("Отпускание левой кнопкой мыши")
-                elif first_arg == "rmb":
-                    commands.mouse_release("right")
-                    if debug:
-                        print("Отпускание правой кнопкой мыши")
-                elif first_arg == "mmb":
-                    commands.mouse_release("middle")
-                    if debug:
-                        print("Отпускание средней кнопкой мыши")
+                        print("Отпускание кнопки " + get_button_by_code(first_arg)[0])
                 else:
-                    commands.release(first_arg)
+                    commands.click(first_arg)
                     if debug:
                         print("Отпускание клавиши " + first_arg)
             elif command == "type":
@@ -130,11 +128,34 @@ def run_macro():
                 time.sleep(float(first_arg) / 1000)
                 if debug:
                     print("Задержка " + first_arg + " миллисекунд")
+            elif command == "moveto":
+                x = int(i[1])
+                y = int(i[2])
+                # Проверить, есть ли 3 аргумент
+                if len(i) == 4:
+                    # Если есть, то присвоить его переменной
+                    duration = int(i[3]) / 1000
+                else:
+                    # Если нет, то присвоить 0.1
+                    duration = 0.1
+                if debug:
+                    print("Перемещение курсора на " + str(x) + " " + str(y))
+                commands.mouse_move_to(x, y, duration)
+            elif command == "move":
+                x = int(i[1])
+                y = int(i[2])
+                if len(i) == 4:
+                    duration = int(i[3]) / 1000
+                else:
+                    duration = 0.1
+                if debug:
+                    print("Перемещение курсора на " + str(x) + " " + str(y))
+                commands.mouse_move(x, y, duration)
             else:
                 print(f"Команда {command} не найдена")
 
         script_run_times += 1
-        # print(f"Макрос выполнен (x{script_run_times})")
+
         """
         Выводим сообщение о том, что макрос выполнен. и реализуем счетчик.
         Пример: Макрос выполнен (x1)
@@ -147,7 +168,7 @@ def run_macro():
 
 
 def get_hotkey() -> str:
-    """Получить первый елемент из словаря макроса."""
+    """Получить первый элемент из словаря макроса."""
     global macro_dict
     if macro_dict is not None:
         # Получить значение первого элемента словаря
@@ -165,9 +186,34 @@ def welcome():
     style = color.Style.BRIGHT + color.Fore.CYAN
     reset = color.Style.RESET_ALL
     print(color.Fore.RESET + "Автор: " + style + "Zenisoft" + reset)
-    print(color.Fore.RESET + "Версия: " + style + "1.2.0" + reset)
+    print(color.Fore.RESET + "Версия: " + style + current_version + reset)
     print(color.Fore.RED + "Welcome to Macro Player" + color.Fore.RESET)
     print("Нажмите " + color.Fore.RED + "Ctrl + C" + color.Fore.RESET + " для выхода")
+
+
+def delete_last_line():
+    sys.stdout.write('\x1b[1A')
+    sys.stdout.write('\x1b[2K')
+
+
+def is_mouse_button(button: str) -> bool:
+    for b in mouse_buttons:
+        if debug:
+            print(f"Код: {b[1]}, аргумент: {button}, совпадают: {b[1] == button}")
+        if b[1] == button:
+            return True
+        else:
+            continue
+
+
+def get_button_by_code(code: str):
+    for b in mouse_buttons:
+        if debug:
+            print(f"Код: {b[1]}, аргумент: {code}, совпадают: {b[1] == code}")
+        if b[1] == code:
+            return b
+        else:
+            continue
 
 
 if __name__ == '__main__':

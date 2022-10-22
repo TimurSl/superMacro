@@ -1,6 +1,9 @@
 import os
 from typing import Dict
 
+import colorama
+
+colorama.init()
 import main
 
 
@@ -8,7 +11,7 @@ def decrypt(file: str) -> list:
     """Decrypts a file and returns a dictionary with the keys and values."""
     # Проверяем, существует ли файл.
     if not os.path.exists(file):
-        print("Файл не найден: " + file)
+        print(f"Файл не найден: {colorama.Fore.RED}{file}{colorama.Fore.RESET}")
         exit(1)
 
     with open(file, 'r') as f:
@@ -22,11 +25,6 @@ def decrypt(file: str) -> list:
         # Проверяем, что первая команда - это hotkey.
         if macro[0][0] != "hotkey":
             print("В файле нет hotkey: " + file)
-            exit(1)
-
-        # Проверяем, что вторая команда - это команда.
-        if macro[1][0] not in ["click", "press", "release", "type", "delay"]:
-            print("В файле нет команды: " + file)
             exit(1)
 
         # Проходимся по всем командам и проверяем, что они корректны.
@@ -59,8 +57,18 @@ def decrypt(file: str) -> list:
                 if len(i) != 2:
                     print("Неверное количество аргументов в delay: " + file)
                     exit(1)
+            # Команда moveto - перемещает курсор на указанные координаты.
+            elif i[0] == "moveto":
+                if len(i) < 3:
+                    print("Неверное количество аргументов в move: " + file)
+                    exit(1)
+            # Команда move - перемещает курсор на указанные координаты.
+            elif i[0] == "move":
+                if len(i) < 3:
+                    print("Неверное количество аргументов в move: " + file)
+                    exit(1)
             else:
-                print("Неверная команда: " + file)
+                print("Неверная команда: " + i[0] + " в файле: " + file)
                 exit(1)
 
         # Возвращаем список списков.
