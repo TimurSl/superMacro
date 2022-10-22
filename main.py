@@ -23,12 +23,13 @@ import file_decryptor
 import colorama as color
 import readline
 
-
 color.init()
 
 file = None
 macro_dict = None
 debug = False
+
+script_run_times = 0
 
 
 def main():
@@ -60,7 +61,7 @@ def main():
 
 
 def run_macro():
-    global macro_dict
+    global macro_dict, script_run_times
     if macro_dict is not None:
         """
         Проходимся по всему словарю и выполняем команды.
@@ -131,7 +132,18 @@ def run_macro():
                     print("Задержка " + first_arg + " миллисекунд")
             else:
                 print(f"Команда {command} не найдена")
-        print("Макрос выполнен")
+
+        script_run_times += 1
+        # print(f"Макрос выполнен (x{script_run_times})")
+        """
+        Выводим сообщение о том, что макрос выполнен. и реализуем счетчик.
+        Пример: Макрос выполнен (x1)
+        Потом стираем строку и выводим: Макрос выполнен (x2)
+        """
+        print(
+            f"Макрос выполнен {color.Fore.CYAN + color.Style.BRIGHT}(x{str(script_run_times)}){color.Style.RESET_ALL}",
+            end="\r"
+        )
 
 
 def get_hotkey() -> str:
@@ -153,7 +165,7 @@ def welcome():
     style = color.Style.BRIGHT + color.Fore.CYAN
     reset = color.Style.RESET_ALL
     print(color.Fore.RESET + "Автор: " + style + "Zenisoft" + reset)
-    print(color.Fore.RESET + "Версия: " + style + "1.1.0" + reset)
+    print(color.Fore.RESET + "Версия: " + style + "1.2.0" + reset)
     print(color.Fore.RED + "Welcome to Macro Player" + color.Fore.RESET)
     print("Нажмите " + color.Fore.RED + "Ctrl + C" + color.Fore.RESET + " для выхода")
 
