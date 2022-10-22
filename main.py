@@ -1,4 +1,12 @@
 # -*- coding: utf-8 -*-
+"""
+GNU General Public License v3.0
+
+Copyright (C) 2020-2021 by @zenisoft
+
+This program comes with ABSOLUTELY NO WARRANTY.
+This is free software, and you are welcome to redistribute it under certain conditions.
+"""
 import argparse
 import distutils
 import os
@@ -14,6 +22,7 @@ import file_decryptor
 
 import colorama as color
 import readline
+
 
 color.init()
 
