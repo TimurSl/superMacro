@@ -1,10 +1,7 @@
 import os
-from typing import Dict
-
 import colorama
 
 colorama.init()
-import main
 
 
 def decrypt(file: str) -> list:
@@ -52,7 +49,6 @@ def decrypt(file: str) -> list:
                 else:
                     i[2] = " ".join(i[2:])
                     del i[3:]
-
             elif i[0] == "delay":
                 if len(i) != 2:
                     print("Неверное количество аргументов в delay: " + file)
@@ -60,12 +56,17 @@ def decrypt(file: str) -> list:
             # Команда moveto - перемещает курсор на указанные координаты.
             elif i[0] == "moveto":
                 if len(i) < 3:
-                    print("Неверное количество аргументов в move: " + file)
+                    print("Неверное количество аргументов в moveto: " + file)
                     exit(1)
             # Команда move - перемещает курсор на указанные координаты.
             elif i[0] == "move":
                 if len(i) < 3:
                     print("Неверное количество аргументов в move: " + file)
+                    exit(1)
+            # Команда resetkey - сбрасывает счетчик выполнений макроса.
+            elif i[0] == "resetkey":
+                if len(i) != 2:
+                    print("Неверное количество аргументов в resetkey: " + file)
                     exit(1)
             else:
                 print("Неверная команда: " + i[0] + " в файле: " + file)
@@ -74,10 +75,7 @@ def decrypt(file: str) -> list:
         # Возвращаем список списков.
         return macro
 
-
         # data = f.read()
         # data = data.split('\n')
         # data = [i.split(' ') for i in data]
         # return data
-
-

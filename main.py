@@ -32,6 +32,10 @@ script_run_times = 0
 
 current_version = "1.2.0"
 
+script_completed_position = None
+
+can_cmd = False
+
 mouse_buttons = [
     ["ЛКМ", "lmb", m.LEFT],
     ["ПКМ", "rmb", m.RIGHT],
@@ -39,6 +43,7 @@ mouse_buttons = [
     ["Кнопка 4", "x1", m.X],
     ["Кнопка 5", "x2", m.X2]
 ]
+
 
 def main():
     global file, macro_dict, debug
@@ -69,7 +74,18 @@ def main():
     else:
         keyboard.add_hotkey(hotkey, run_macro)
     print("Нажмите " + color.Fore.RED + hotkey + color.Fore.RESET + " для запуска макроса")
+    clearhotkey = get_clear_hotkey()
+    if clearhotkey != None:
+        keyboard.add_hotkey(clearhotkey, clear_script_run_times)
+        print("Нажмите " + color.Fore.RED + clearhotkey + color.Fore.RESET + " для очистки количества запусков макроса")
 
+def clear_script_run_times():
+    global script_run_times
+    script_run_times = 0
+    sys.stdout.write(
+        f"Количество выполнений макроса {color.Fore.LIGHTGREEN_EX}успешно{color.Style.RESET_ALL} сброшено\r"
+    )
+    sys.stdout.flush()
 
 def run_macro():
     global macro_dict, script_run_times
@@ -151,20 +167,22 @@ def run_macro():
                 if debug:
                     print("Перемещение курсора на " + str(x) + " " + str(y))
                 commands.mouse_move(x, y, duration)
+
             else:
                 print(f"Команда {command} не найдена")
 
         script_run_times += 1
 
-        """
-        Выводим сообщение о том, что макрос выполнен. и реализуем счетчик.
-        Пример: Макрос выполнен (x1)
-        Потом стираем строку и выводим: Макрос выполнен (x2)
-        """
-        print(
-            f"Макрос выполнен {color.Fore.CYAN + color.Style.BRIGHT}(x{str(script_run_times)}){color.Style.RESET_ALL}",
-            end="\r"
-        )
+        script_completed()
+
+
+def script_completed():
+    # Очистить строку
+    print(" " * 100, end="\r")
+    sys.stdout.write(
+        f"Макрос выполнен {color.Fore.CYAN + color.Style.BRIGHT}(x{str(script_run_times)}){color.Style.RESET_ALL}\r"
+    )
+    sys.stdout.flush()
 
 
 def get_hotkey() -> str:
@@ -178,6 +196,15 @@ def get_hotkey() -> str:
     else:
         print("Файл не найден")
 
+def get_clear_hotkey() -> str:
+    """
+    Найти елемент в котором есть команда resetkey
+    """
+    for i in macro_dict:
+        if i[0] == "resetkey":
+            resetkey = i[1]
+            macro_dict.remove(i)
+            return i[1]
 
 def welcome():
     art = text2art("MACRO", font="block", chr_ignore=True)
