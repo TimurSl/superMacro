@@ -30,11 +30,7 @@ debug = False
 
 script_run_times = 0
 
-current_version = "1.2.0"
-
-script_completed_position = None
-
-can_cmd = False
+current_version = "1.3.0"
 
 mouse_buttons = [
     ["ЛКМ", "lmb", m.LEFT],
