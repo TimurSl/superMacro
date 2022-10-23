@@ -220,8 +220,12 @@ def get_clear_hotkey() -> list:
     """
     for i in macro_dict:
         if i[0] == "resetkey":
+            try:
+                type = i[2]
+            except IndexError:
+                type = "back"
             resetkey = i[1]
-            type = i[2]
+
             macro_dict.remove(i)
             list = [resetkey, type]
             return list
