@@ -29,7 +29,7 @@ macro_dict = None
 debug = False
 
 script_run_times = 0
-current_version = "1.3.0"
+current_version = "1.3.1"
 
 reset_macro_type = 'back'
 
