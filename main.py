@@ -29,8 +29,9 @@ macro_dict = None
 debug = False
 
 script_run_times = 0
-
 current_version = "1.3.0"
+
+reset_macro_type = 'back'
 
 mouse_buttons = [
     ["ЛКМ", "lmb", m.LEFT],
@@ -42,7 +43,7 @@ mouse_buttons = [
 
 
 def main():
-    global file, macro_dict, debug
+    global file, macro_dict, debug, reset_macro_type
     welcome()
     readline.parse_and_bind("tab: complete")
     parser = argparse.ArgumentParser()
@@ -70,18 +71,39 @@ def main():
     else:
         keyboard.add_hotkey(hotkey, run_macro)
     print("Нажмите " + color.Fore.RED + hotkey + color.Fore.RESET + " для запуска макроса")
-    clearhotkey = get_clear_hotkey()
+    listClear = get_clear_hotkey()
+    clearhotkey = listClear[0]
+    reset_macro_type = listClear[1]
+
     if clearhotkey != None:
         keyboard.add_hotkey(clearhotkey, clear_script_run_times)
         print("Нажмите " + color.Fore.RED + clearhotkey + color.Fore.RESET + " для очистки количества запусков макроса")
+import win32gui,win32process,os
+
 
 def clear_script_run_times():
     global script_run_times
-    script_run_times = 0
-    sys.stdout.write(
-        f"Количество выполнений макроса {color.Fore.LIGHTGREEN_EX}успешно{color.Style.RESET_ALL} сброшено\r"
-    )
-    sys.stdout.flush()
+    focus_window_pid = win32process.GetWindowThreadProcessId(win32gui.GetForegroundWindow())[1]
+    current_process_pid = os.getppid()
+
+    if focus_window_pid == current_process_pid:
+        if reset_macro_type == "fore":
+            script_run_times = 0
+            script_run_times = 0
+            sys.stdout.write(
+                f"Количество выполнений макроса {color.Fore.LIGHTGREEN_EX}успешно{color.Style.RESET_ALL} сброшено\r"
+            )
+            sys.stdout.flush()
+    else:
+        if reset_macro_type == "back":
+            script_run_times = 0
+            sys.stdout.write(
+                f"Количество выполнений макроса {color.Fore.LIGHTGREEN_EX}успешно{color.Style.RESET_ALL} сброшено\r"
+            )
+            sys.stdout.flush()
+
+
+
 
 def run_macro():
     global macro_dict, script_run_times
@@ -192,15 +214,17 @@ def get_hotkey() -> str:
     else:
         print("Файл не найден")
 
-def get_clear_hotkey() -> str:
+def get_clear_hotkey() -> list:
     """
     Найти елемент в котором есть команда resetkey
     """
     for i in macro_dict:
         if i[0] == "resetkey":
             resetkey = i[1]
+            type = i[2]
             macro_dict.remove(i)
-            return i[1]
+            list = [resetkey, type]
+            return list
 
 def welcome():
     art = text2art("MACRO", font="block", chr_ignore=True)

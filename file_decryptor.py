@@ -65,7 +65,7 @@ def decrypt(file: str) -> list:
                     exit(1)
             # Команда resetkey - сбрасывает счетчик выполнений макроса.
             elif i[0] == "resetkey":
-                if len(i) != 2:
+                if len(i) < 2:
                     print("Неверное количество аргументов в resetkey: " + file)
                     exit(1)
             else:
