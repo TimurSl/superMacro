@@ -12,6 +12,7 @@ import sys
 import time
 
 import keyboard
+import mouse
 import mouse as m
 from art import tprint, text2art
 from past.builtins import raw_input
@@ -21,6 +22,7 @@ import file_decryptor
 
 import colorama as color
 import readline
+import win32gui, win32process, os
 
 color.init()
 
@@ -32,7 +34,7 @@ script_run_times = 0
 current_version = "1.3.1"
 
 reset_macro_type = 'back'
-
+hotkey = None
 mouse_buttons = [
     ["ЛКМ", "lmb", m.LEFT],
     ["ПКМ", "rmb", m.RIGHT],
@@ -43,14 +45,17 @@ mouse_buttons = [
 
 
 def main():
-    global file, macro_dict, debug, reset_macro_type
+    global file, macro_dict, debug, reset_macro_type, hotkey
     welcome()
     readline.parse_and_bind("tab: complete")
+
     parser = argparse.ArgumentParser()
+
     parser.add_argument("-script", help="Запустить макрос из файла")
-    # Добавить аргумент для отладки, если он есть, то включить отладку
     parser.add_argument("-debug", help="Включить отладку", action="store_true")
+
     args = parser.parse_args()
+
     if args.script:
         file = args.script
     else:
@@ -61,16 +66,28 @@ def main():
         print("Отладка включена")
 
     macro_dict = file_decryptor.decrypt(file)
+    print("Загрузка макроса...")
     if debug:
         print(macro_dict)
-    print("Макрос загружен: " + file)
 
     hotkey = get_hotkey()
-    if hotkey in mouse_buttons:
-        pass
+    if debug:
+        print("Горячая клавиша: " + str(hotkey))
+
+    if is_mouse_button(hotkey):
+        # Привязываем обработчик событий мыши
+        mouse.hook(mouse_handler)
     else:
         keyboard.add_hotkey(hotkey, run_macro)
-    print("Нажмите " + color.Fore.RED + hotkey + color.Fore.RESET + " для запуска макроса")
+
+    if not is_mouse_button(hotkey):
+        print("Нажмите " + color.Fore.RED + hotkey + color.Fore.RESET + " для запуска макроса")
+    else:
+        name = get_name_by_button(hotkey)
+        if debug:
+            print("Название кнопки: " + name)
+        print("Нажмите " + color.Fore.RED + name + color.Fore.RESET + " для запуска макроса")
+
     listClear = get_clear_hotkey()
     clearhotkey = listClear[0]
     reset_macro_type = listClear[1]
@@ -78,7 +95,40 @@ def main():
     if clearhotkey != None:
         keyboard.add_hotkey(clearhotkey, clear_script_run_times)
         print("Нажмите " + color.Fore.RED + clearhotkey + color.Fore.RESET + " для очистки количества запусков макроса")
-import win32gui,win32process,os
+
+    print("Макрос загружен: " + file)
+
+
+
+def mouse_handler(event):
+    # Если событие это ButtonEvent
+    if isinstance(event, mouse.ButtonEvent):
+        if debug:
+            print("Нажата кнопка мыши: " + str(event.button) + " А хоткей: " + str(hotkey) + " А переведенный хоткей: " + str(get_button_by_code(hotkey)[2]))
+        # Если нажата кнопка мыши, которая указана в макросе
+        if event.button == get_button_by_code(hotkey)[2]:
+            # Если нажата кнопка мыши, которая указана в макросе
+            if event.event_type == mouse.UP:
+                # Запустить макрос
+                run_macro()
+
+    # down - вызывается при нажатии кнопки мыши
+    # up - вызывается при отпускании кнопки мыши
+    # wheel - вызывается при прокрутке колеса мыши
+    # move - вызывается при перемещении мыши
+    # scroll - вызывается при прокрутке колеса мыши
+    # double - вызывается при двойном нажатии кнопки мыши
+    # triple - вызывается при тройном нажатии кнопки мыши
+    # quadruple - вызывается при четырехкратном нажатии кнопки мыши
+    # button - вызывается при нажатии кнопки мыши
+    # drag - вызывается при перемещении мыши с зажатой кнопкой мыши
+    # drop - вызывается при отпускании кнопки мыши после перемещения мыши с зажатой кнопкой мыши
+    # enter - вызывается при наведении мыши на объект
+    # leave - вызывается при уходе мыши с объекта
+    # click - вызывается при нажатии и отпускании кнопки мыши
+    # press - вызывается при нажатии кнопки мыши
+    # release - вызывается при отпускании кнопки мыши
+
 
 
 def clear_script_run_times():
@@ -89,6 +139,11 @@ def clear_script_run_times():
     if focus_window_pid == current_process_pid:
         if reset_macro_type == "fore":
             script_run_times = 0
+            sys.stdout.write(
+                f"Количество выполнений макроса {color.Fore.LIGHTGREEN_EX}успешно{color.Style.RESET_ALL} сброшено\r"
+            )
+            sys.stdout.flush()
+        elif reset_macro_type == "back":
             script_run_times = 0
             sys.stdout.write(
                 f"Количество выполнений макроса {color.Fore.LIGHTGREEN_EX}успешно{color.Style.RESET_ALL} сброшено\r"
@@ -101,8 +156,8 @@ def clear_script_run_times():
                 f"Количество выполнений макроса {color.Fore.LIGHTGREEN_EX}успешно{color.Style.RESET_ALL} сброшено\r"
             )
             sys.stdout.flush()
-
-
+        elif reset_macro_type == "fore":
+            pass
 
 
 def run_macro():
@@ -118,7 +173,7 @@ def run_macro():
                 print(f"Команда: {command}, Аргумент: {first_arg}")
             # click - нажать кнопку
             if command == "click":
-                # Проверка, являеться ли клавиша кнопкой мыши
+                # Проверка, является ли клавиша кнопкой мыши
                 if is_mouse_button(first_arg):
                     # Нажатие клавиши
                     commands.mouse_click(get_button_by_code(first_arg)[2])
@@ -126,7 +181,7 @@ def run_macro():
                     if debug:
                         # Вывести сообщение
                         print("Клик кнопки " + get_button_by_code(first_arg)[0])
-                # Если не являеться
+                # Если не является
                 else:
                     # Нажатие клавиши
                     commands.click(first_arg)
@@ -214,6 +269,7 @@ def get_hotkey() -> str:
     else:
         print("Файл не найден")
 
+
 def get_clear_hotkey() -> list:
     """
     Найти елемент в котором есть команда resetkey
@@ -221,14 +277,15 @@ def get_clear_hotkey() -> list:
     for i in macro_dict:
         if i[0] == "resetkey":
             try:
-                type = i[2]
+                clear_type = i[2]
             except IndexError:
-                type = "back"
+                clear_type = "back"
             resetkey = i[1]
 
             macro_dict.remove(i)
-            list = [resetkey, type]
-            return list
+            clear_list = [resetkey, clear_type]
+            return clear_list
+
 
 def welcome():
     art = text2art("MACRO", font="block", chr_ignore=True)
@@ -263,6 +320,15 @@ def get_button_by_code(code: str):
             print(f"Код: {b[1]}, аргумент: {code}, совпадают: {b[1] == code}")
         if b[1] == code:
             return b
+        else:
+            continue
+
+def get_name_by_button(button: str):
+    for b in mouse_buttons:
+        if debug:
+            print(f"Код: {b[1]}, аргумент: {button}, совпадают: {b[1] == button}")
+        if b[1] == button:
+            return b[0]
         else:
             continue
 
